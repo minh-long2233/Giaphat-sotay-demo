@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gia Phát — Sổ tay dùng thử</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f3f6f4;color:#20312a;line-height:1.6}
+header{background:#155e44;color:white;padding:20px}
+h1{font-size:23px;margin:0}
+header p{margin:6px 0 0}
+main{max-width:850px;margin:auto;padding:14px}
+.card{background:white;border:1px solid #dce4de;border-radius:10px;padding:16px;margin-bottom:14px}
+h2{font-size:20px;margin-top:0}
+label{display:block;margin:12px 0 6px}
+select,input,textarea{width:100%;padding:12px;border:1px solid #bbc9bf;border-radius:7px;font:inherit;background:white}
+textarea{min-height:110px}
+button{background:#155e44;color:white;border:0;border-radius:7px;padding:12px;font:inherit;cursor:pointer;margin:10px 5px 0 0}
+.notice{background:#fff7dd;padding:12px;border-radius:7px}
+.check{display:flex;gap:10px;align-items:flex-start}
+.check input{width:22px;height:22px;flex:none}
+.small{font-size:13px;color:#596b60}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}
+#status{padding:12px;background:#fff7dd;margin-bottom:14px}
+</style>
+</head>
+<body>
+<header>
+<h1>Gia Phát — Sổ tay dùng thử</h1>
+<p>8 bộ phận • Không có dữ liệu nội bộ • AI chưa kết nối</p>
+</header>
+<main>
+<div id="status" role="status">
+Chưa xác nhận JavaScript hoạt động.
+Nếu dòng này không đổi, không nhập nhật ký.
+</div>
+
+<div class="notice">
+Website công khai, chưa có đăng nhập hoặc phân quyền.
+Chỉ nhập dữ liệu thử, không ghi thông tin cá nhân hoặc số liệu vận hành thật.
+Nhật ký chỉ lưu trong trình duyệt này, không đồng bộ nhiều máy.
+</div>
+
+<div class="card" style="margin-top:14px">
+<h2>Chọn bộ phận</h2>
+<label for="department">Bộ phận</label>
+<select id="department">
+<option value="farm">Vùng nguyên liệu</option>
+<option value="qc">Thu mua — tiếp nhận — QC</option>
+<option value="warehouse">Kho — mua hàng</option>
+<option value="production">Rang — phối trộn — xay</option>
+<option value="packing">Đóng gói — tem nhãn</option>
+<option value="delivery">Giao nhận — phân phối</option>
+<option value="shops">Vận hành quán</option>
+<option value="management">Quản lý — nhân công</option>
+</select>
+<p class="small">Danh sách có sẵn trong HTML. Nội dung bên dưới cần JavaScript để cập nhật.</p>
+</div>
+
+<div class="card">
+<h2 id="manualTitle">Hướng dẫn công việc</h2>
+<ol id="steps"></ol>
+<p class="notice" id="rule">
+Quy trình dùng thử, chưa được phê duyệt.
+</p>
+</div>
+
+<div class="card">
+<h2>Checklist và nhật ký thử</h2>
+<div id="checks"></div>
+<form id="journal">
+<label for="date">Ngày thực hiện</label>
+<input id="date" type="date" required>
+<label for="result">Kết quả thử</label>
+<textarea id="result" maxlength="2000" required
+placeholder="Ví dụ: DỮ LIỆU THỬ — đã kiểm tra giao diện."></textarea>
+<button type="submit" id="save" disabled>Lưu nhật ký thử</button>
+</form>
+<p class="small">
+Lưu nhật ký không tạo chứng từ, không đổi tồn kho và không phải phê duyệt.
+Đổi bộ phận sẽ đặt lại checklist chưa lưu.
+</p>
+</div>
+
+<div class="card">
+<h2>Trợ lý AI — Chưa kết nối</h2>
+<p>Soạn câu hỏi để sao chép gửi AI. Không tự gửi dữ liệu ra ngoài.</p>
+<label for="question">Câu hỏi</label>
+<textarea id="question" maxlength="2000"
+placeholder="Ví dụ: Công việc này cần kiểm tra những gì?"></textarea>
+<button id="build" disabled>Soạn câu hỏi</button>
+<label for="prompt">Nội dung để sao chép</label>
+<textarea id="prompt" readonly></textarea>
+<p class="small">Chạm giữ trong ô nội dung → Chọn tất cả → Sao chép, rồi dán vào cuộc trò chuyện này.</p>
+</div>
+
+<div class="card">
+<h2>Nhật ký đã lưu</h2>
+<div id="logs">Chưa đọc dữ liệu.</div>
+<button id="backup" disabled>Tải sao lưu JSON</button>
+<p class="small">
+Bản thử chưa có khôi phục, sửa hoặc xóa nhật ký.
+Không dùng bản này làm nơi lưu duy nhất cho dữ liệu quan trọng.
+</p>
+</div>
+</main>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const KEY="giaphat_public_demo_logs_v1";
+const data={
+farm:{
+steps:[
+"Xác định khu vực và nhiệm vụ được giao.",
+"Kiểm tra dụng cụ, điều kiện làm việc và yêu cầu an toàn.",
+"Ghi công việc, vật tư và khối lượng thực tế nếu có.",
+"Bàn giao việc còn lại và báo bất thường."
+],
+rule:"Tách diện tích đất khỏi diện tích thực trồng. Không tự chọn hóa chất hoặc liều dùng."
+},
+qc:{
+steps:[
+"Ghi thông tin hàng và chứng từ tiếp nhận.",
+"Cân tổng, cân bì và xác định khối lượng tịnh.",
+"Nhận diện lô hàng và nguồn gốc.",
+"Kiểm tra theo tiêu chí được duyệt; tách hàng chờ kiểm tra."
+],
+rule:"Chưa có ngưỡng QC được duyệt thì không tự kết luận đạt. Không trộn hàng cách ly với hàng đạt."
+},
+warehouse:{
+steps:[
+"Kiểm tra địa điểm, mã hàng, mã lô và đơn vị.",
+"Đối chiếu số lượng thực cân hoặc đếm.",
+"Kiểm tra chứng từ trước khi xác nhận.",
+"Đối chiếu cuối ca và sao lưu."
+],
+rule:"Không xuất vượt tồn hoặc nhập bù tùy ý. Nhật ký này không phải chứng từ kho."
+},
+production:{
+steps:[
+"Kiểm tra thiết bị theo tài liệu và người hướng dẫn.",
+"Chọn lô đầu vào, cân và ghi thông tin công đoạn.",
+"Cân đầu ra thực tế và nhận diện lô mới.",
+"Đối chiếu khối lượng, bàn giao và vệ sinh an toàn."
+],
+rule:"Không tự đặt thông số máy hoặc lấy sản lượng lý thuyết thay số thực cân."
+},
+packing:{
+steps:[
+"Kiểm tra vệ sinh, cân, bao bì và mẫu tem được duyệt.",
+"Nhận diện lô nguyên liệu và bao bì.",
+"Cân kiểm tra, kiểm tra đường hàn và nhãn.",
+"Đếm sản phẩm đạt, vật tư lỗi và phần còn lại."
+],
+rule:"Tách sản phẩm thiếu cân, hở hàn hoặc sai nhãn. Không tự xác nhận tuân thủ pháp lý."
+},
+delivery:{
+steps:[
+"Kiểm tra nơi xuất, nơi nhận, hàng và lô.",
+"Kiểm đếm và lập thông tin bàn giao.",
+"Theo dõi hàng đang vận chuyển.",
+"Người nhận kiểm đếm, ghi thực nhận và chênh lệch."
+],
+rule:"Không xác nhận nhận đủ khi thực tế nhận thiếu. Báo người phụ trách khi có chênh lệch."
+},
+shops:{
+steps:[
+"Đầu ca kiểm tra vệ sinh, thiết bị và hàng bàn giao.",
+"Bán hàng trên hệ thống bán hàng hiện có.",
+"Ghi riêng hàng hỏng và sử dụng nội bộ.",
+"Cuối ca kiểm đếm, đối chiếu và bàn giao."
+],
+rule:"Không suy ra lượng nguyên liệu tiêu hao từ doanh thu khi chưa có định mức được duyệt."
+},
+management:{
+steps:[
+"Phân công người, nhiệm vụ và yêu cầu an toàn.",
+"Hướng dẫn và làm mẫu cho người mới.",
+"Ghi kết quả thực tế và việc còn lại.",
+"Tổng hợp ngoại lệ cần người có quyền duyệt."
+],
+rule:"AI không tự duyệt chứng từ, quyết định lương hoặc kỷ luật."
+}
+};
+
+let logs=[];
+let writable=false;
+function status(text){$("status").textContent=text}
+function dateToday(){
+const d=new Date();
+return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")
++"-"+String(d.getDate()).padStart(2,"0");
+}
+function list(){
+$("logs").replaceChildren();
+if(!logs.length){
+$("logs").textContent="Chưa có nhật ký.";
+return;
+}
+for(const log of [...logs].reverse()){
+const p=document.createElement("pre");
+p.textContent=log.date+" — "+log.department+
+"\n"+log.result+"\nChecklist: "+
+log.checks.map(c=>(c.done?"Đã đánh dấu: ":"Chưa đánh dấu: ")+c.text).join("; ");
+$("logs").appendChild(p);
+}
+}
+function manual(){
+const select=$("department");
+const d=data[select.value];
+$("manualTitle").textContent=select.options[select.selectedIndex].text;
+$("steps").replaceChildren();
+$("checks").replaceChildren();
+for(const text of d.steps){
+const li=document.createElement("li");
+li.textContent=text;
+$("steps").appendChild(li);
+const label=document.createElement("label");
+label.className="check";
+const input=document.createElement("input");
+input.type="checkbox";
+const span=document.createElement("span");
+span.textContent=text;
+label.append(input,span);
+$("checks").appendChild(label);
+}
+$("rule").textContent=d.rule+" Quy trình dùng thử, chưa được phê duyệt.";
+$("prompt").value="";
+}
+try{
+const raw=localStorage.getItem(KEY);
+if(raw){
+const parsed=JSON.parse(raw);
+if(!Array.isArray(parsed)||!parsed.every(l=>
+l&&typeof l.date==="string"&&typeof l.department==="string"
+&&typeof l.result==="string"&&Array.isArray(l.checks)
+&&l.checks.every(c=>c&&typeof c.text==="string"&&typeof c.done==="boolean")
+))throw new Error("Nhật ký đã lưu không hợp lệ.");
+logs=parsed;
+}
+const probe=KEY+"_probe";
+localStorage.setItem(probe,"ok");
+localStorage.removeItem(probe);
+writable=true;
+$("save").disabled=false;
+status("JavaScript đang hoạt động. Đã kiểm tra khả năng lưu thử trong trình duyệt.");
+}catch(error){
+status("JavaScript hoạt động nhưng không thể xác nhận lưu nhật ký: "+error.message+
+" Không xóa dữ liệu trình duyệt.");
+}
+$("date").value=dateToday();
+manual();
+list();
+$("build").disabled=false;
+$("backup").disabled=!writable;
+$("department").addEventListener("change",manual);
+
+$("journal").addEventListener("submit",event=>{
+event.preventDefault();
+if(!writable)return;
+const result=$("result").value.trim();
+if(!result){status("Nhập kết quả thử trước.");return;}
+const select=$("department");
+const checks=Array.from($("checks").querySelectorAll("label")).map(label=>({
+text:label.querySelector("span").textContent,
+done:label.querySelector("input").checked
+}));
+const next=[...logs,{
+date:$("date").value,
+department:select.options[select.selectedIndex].text,
+result,checks,createdAt:new Date().toISOString()
+}];
+try{
+localStorage.setItem(KEY,JSON.stringify(next));
+logs=next;list();
+$("result").value="";
+status("Đã lưu nhật ký thử. Hãy tải sao lưu.");
+}catch(error){
+status("Không lưu được: "+error.message);
+}
+});
+
+$("build").addEventListener("click",()=>{
+const question=$("question").value.trim();
+if(!question){status("Nhập câu hỏi trước.");return;}
+$("prompt").value=
+"Bạn là trợ lý vận hành cho bộ phận: "+$("manualTitle").textContent+
+". Trả lời tiếng Việt, ngắn và từng bước.\n"+
+"Đây là sổ tay dùng thử, chưa phê duyệt. AI chỉ hướng dẫn và đề xuất.\n"+
+"Thiếu thông tin phải hỏi; không tự điền số liệu, sửa tồn hoặc xác nhận phiếu.\n"+
+"Không tự đặt ngưỡng QC, thông số máy hoặc liều hóa chất.\n"+
+"Nếu có nguy cơ an toàn, đề nghị dừng việc liên quan và báo người phụ trách.\n"+
+"Quy tắc tham khảo: "+data[$("department").value].rule+
+"\nCâu hỏi của người dùng:\n"+question;
+status("Đã soạn câu hỏi. Kiểm tra rồi sao chép gửi AI.");
+});
+
+$("backup").addEventListener("click",()=>{
+const content=JSON.stringify({
+app:"giaphat-public-demo",version:1,logs
+},null,2);
+const url=URL.createObjectURL(new Blob([content],{type:"application/json"}));
+const a=document.createElement("a");
+a.href=url;
+a.download="GiaPhat-demo-"+Date.now()+".json";
+document.body.appendChild(a);a.click();a.remove();
+setTimeout(()=>URL.revokeObjectURL(url),30000);
+status("Đã yêu cầu tải sao lưu. Kiểm tra mục Tải xuống.");
+});
+</script>
+</body>
+</html>
